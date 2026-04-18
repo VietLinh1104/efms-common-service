@@ -34,6 +34,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final EntityLinkRepository entityLinkRepository;
     private final CommentMapper commentMapper;
+    private final com.linhdv.efms_common_service.service.integration.IdentityServiceClient identityServiceClient;
 
     @Override
     @Transactional
@@ -65,7 +66,9 @@ public class CommentServiceImpl implements CommentService {
                 referenceType, referenceId, companyId);
 
         List<Comment> comments = commentRepository.findAllByReference(companyId, referenceId, referenceType);
-        return commentMapper.toResponseList(comments);
+        List<CommentResponse> responses = commentMapper.toResponseList(comments);
+        enrichCommentAuthorInfo(responses, companyId);
+        return responses;
     }
 
     @Override
@@ -77,6 +80,7 @@ public class CommentServiceImpl implements CommentService {
         Page<Comment> pageResult = commentRepository.findPagedByReference(companyId, referenceId, referenceType, pageable);
 
         List<CommentResponse> content = commentMapper.toResponseList(pageResult.getContent());
+        enrichCommentAuthorInfo(content, companyId);
         return PagedResponse.of(content, page, size, pageResult.getTotalElements());
     }
 
@@ -127,5 +131,25 @@ public class CommentServiceImpl implements CommentService {
         link.setCreatedAt(Instant.now());
 
         entityLinkRepository.save(link);
+    }
+
+    private void enrichCommentAuthorInfo(List<CommentResponse> responses, UUID companyId) {
+        if (responses == null || responses.isEmpty()) return;
+
+        java.util.Set<UUID> authorIds = responses.stream()
+                .map(CommentResponse::getAuthorId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+
+        java.util.Map<UUID, com.linhdv.efms_common_service.dto.integration.UserBasicInfo> userMap =
+                identityServiceClient.getBatchUsers(authorIds, companyId);
+
+        for (CommentResponse response : responses) {
+            com.linhdv.efms_common_service.dto.integration.UserBasicInfo userInfo = userMap.get(response.getAuthorId());
+            if (userInfo != null) {
+                response.setAuthorName(userInfo.getFullName());
+                response.setAuthorAvatar(userInfo.getAvatar());
+            }
+        }
     }
 }

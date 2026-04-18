@@ -31,6 +31,9 @@ public class AttachmentResponse {
     @Schema(description = "ID người upload")
     private UUID createdBy;
 
+    @Schema(description = "Tên người upload")
+    private String createdByName;
+
     @Schema(description = "Thời điểm upload")
     private Instant createdAt;
 }

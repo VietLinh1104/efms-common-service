@@ -22,6 +22,12 @@ public class CommentResponse {
     @Schema(description = "ID tác giả comment")
     private UUID authorId;
 
+    @Schema(description = "Tên tác giả comment")
+    private String authorName;
+
+    @Schema(description = "Ảnh đại diện tác giả (nếu có)")
+    private String authorAvatar;
+
     @Schema(description = "Thời điểm tạo")
     private Instant createdAt;
 }

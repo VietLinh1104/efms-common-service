@@ -34,6 +34,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     private final AttachmentRepository attachmentRepository;
     private final EntityLinkRepository entityLinkRepository;
     private final AttachmentMapper attachmentMapper;
+    private final com.linhdv.efms_common_service.service.integration.IdentityServiceClient identityServiceClient;
 
     @Override
     @Transactional
@@ -68,7 +69,9 @@ public class AttachmentServiceImpl implements AttachmentService {
                 referenceType, referenceId, companyId);
 
         List<Attachment> attachments = attachmentRepository.findAllByReference(companyId, referenceId, referenceType);
-        return attachmentMapper.toResponseList(attachments);
+        List<AttachmentResponse> responses = attachmentMapper.toResponseList(attachments);
+        enrichAttachmentCreatorInfo(responses, companyId);
+        return responses;
     }
 
     @Override
@@ -103,6 +106,7 @@ public class AttachmentServiceImpl implements AttachmentService {
         Page<Attachment> pageResult = attachmentRepository.findAllByCompanyId(companyId, pageable);
 
         List<AttachmentResponse> content = attachmentMapper.toResponseList(pageResult.getContent());
+        enrichAttachmentCreatorInfo(content, companyId);
         return PagedResponse.of(content, page, size, pageResult.getTotalElements());
     }
 
@@ -128,5 +132,24 @@ public class AttachmentServiceImpl implements AttachmentService {
         link.setCreatedAt(Instant.now());
 
         entityLinkRepository.save(link);
+    }
+
+    private void enrichAttachmentCreatorInfo(List<AttachmentResponse> responses, UUID companyId) {
+        if (responses == null || responses.isEmpty()) return;
+
+        java.util.Set<UUID> creatorIds = responses.stream()
+                .map(AttachmentResponse::getCreatedBy)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+
+        java.util.Map<UUID, com.linhdv.efms_common_service.dto.integration.UserBasicInfo> userMap =
+                identityServiceClient.getBatchUsers(creatorIds, companyId);
+
+        for (AttachmentResponse response : responses) {
+            com.linhdv.efms_common_service.dto.integration.UserBasicInfo userInfo = userMap.get(response.getCreatedBy());
+            if (userInfo != null) {
+                response.setCreatedByName(userInfo.getFullName());
+            }
+        }
     }
 }
