@@ -28,3 +28,5 @@ efms:
   app:
     jwtSecret: ${JWT_SECRET}
     jwtExpirationMs: ${JWT_EXPIRATION_MS:86400000}
+  integration:
+    identity-url: ${IDENTITY_URL}
