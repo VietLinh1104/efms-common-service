@@ -1,42 +1,17 @@
-# ============================================================
 # Stage 1: Build
-# ============================================================
-FROM eclipse-temurin:21-jdk-alpine AS builder
-
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS build
 WORKDIR /app
-
-# Copy Maven wrapper and pom.xml trước để cache layer dependency
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-
-# Download dependencies (sẽ được cache nếu pom.xml không thay đổi)
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source code và build
+COPY pom.xml .
 COPY src ./src
-RUN ./mvnw package -DskipTests -B
+RUN mvn clean package -DskipTests
 
-# ============================================================
-# Stage 2: Runtime
-# ============================================================
-FROM eclipse-temurin:21-jre-alpine AS runtime
-
+# Stage 2: Run
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 
-# Tạo user non-root để bảo mật
-RUN addgroup -S efms && adduser -S efms -G efms
-
-# Copy JAR từ stage build
-COPY --from=builder /app/target/*.jar app.jar
-
-# Đổi owner về user non-root
-RUN chown efms:efms app.jar
-USER efms
-
-# Expose port mặc định
-EXPOSE 8080
-
-# Thiết lập Spring profile production
+# Railway injects PORT at runtime; default to 8083
 ENV SPRING_PROFILES_ACTIVE=prod
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Use shell form so $PORT is expanded at runtime by Railway
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT:-8083}"]
