@@ -18,7 +18,7 @@ spring:
           time_zone: Asia/Ho_Chi_Minh
 
 server:
-  port: ${SERVER_PORT:8083}
+  port: ${PORT:8080}
 
 logging:
   pattern:
