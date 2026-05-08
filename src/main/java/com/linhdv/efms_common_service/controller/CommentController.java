@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/common/comments")
+@RequestMapping("/v1/comments")
 @RequiredArgsConstructor
 @Tag(name = "Comment", description = "API quản lý bình luận chung cho toàn hệ thống")
 public class CommentController {
@@ -29,10 +29,8 @@ public class CommentController {
     @PostMapping
     @Operation(summary = "Viết bình luận mới", description = "Tạo bình luận và tự động liên kết với entity qua bảng entity_links.")
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
-            @Parameter(description = "ID công ty (lấy từ Header hoặc JWT)", required = true)
-            @RequestHeader("X-Company-Id") UUID companyId,
-            @Parameter(description = "ID người dùng (lấy từ Header hoặc JWT)", required = true)
-            @RequestHeader("X-User-Id") UUID userId,
+            @Parameter(description = "ID công ty (lấy từ Header hoặc JWT)", required = true) @RequestHeader("X-Company-Id") UUID companyId,
+            @Parameter(description = "ID người dùng (lấy từ Header hoặc JWT)", required = true) @RequestHeader("X-User-Id") UUID userId,
             @Valid @RequestBody CommentRequest request) {
 
         log.info("Request create comment from userId={} companyId={}", userId, companyId);
@@ -43,8 +41,7 @@ public class CommentController {
     @GetMapping("/{id}")
     @Operation(summary = "Lấy thông tin chi tiết một bình luận")
     public ResponseEntity<ApiResponse<CommentResponse>> getCommentById(
-            @Parameter(description = "ID công ty", required = true)
-            @RequestHeader("X-Company-Id") UUID companyId,
+            @Parameter(description = "ID công ty", required = true) @RequestHeader("X-Company-Id") UUID companyId,
             @PathVariable UUID id) {
 
         CommentResponse response = commentService.getCommentById(id, companyId);
@@ -54,8 +51,7 @@ public class CommentController {
     @GetMapping("/reference/{referenceType}/{referenceId}")
     @Operation(summary = "Lấy danh sách bình luận của một entity (không phân trang)")
     public ResponseEntity<ApiResponse<List<CommentResponse>>> getCommentsByReference(
-            @Parameter(description = "ID công ty", required = true)
-            @RequestHeader("X-Company-Id") UUID companyId,
+            @Parameter(description = "ID công ty", required = true) @RequestHeader("X-Company-Id") UUID companyId,
             @PathVariable String referenceType,
             @PathVariable UUID referenceId) {
 
@@ -66,22 +62,21 @@ public class CommentController {
     @GetMapping("/reference/{referenceType}/{referenceId}/paged")
     @Operation(summary = "Lấy danh sách bình luận của một entity (có phân trang)")
     public ResponseEntity<ApiResponse<PagedResponse<CommentResponse>>> getPagedCommentsByReference(
-            @Parameter(description = "ID công ty", required = true)
-            @RequestHeader("X-Company-Id") UUID companyId,
+            @Parameter(description = "ID công ty", required = true) @RequestHeader("X-Company-Id") UUID companyId,
             @PathVariable String referenceType,
             @PathVariable UUID referenceId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        PagedResponse<CommentResponse> pagedResponse = commentService.getPagedCommentsByReference(referenceId, referenceType, companyId, page, size);
+        PagedResponse<CommentResponse> pagedResponse = commentService.getPagedCommentsByReference(referenceId,
+                referenceType, companyId, page, size);
         return ResponseEntity.ok(ApiResponse.success(pagedResponse));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xoá bình luận và huỷ liên kết")
     public ResponseEntity<ApiResponse<Void>> deleteComment(
-            @Parameter(description = "ID công ty", required = true)
-            @RequestHeader("X-Company-Id") UUID companyId,
+            @Parameter(description = "ID công ty", required = true) @RequestHeader("X-Company-Id") UUID companyId,
             @PathVariable UUID id) {
 
         commentService.deleteComment(id, companyId);
